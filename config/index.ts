@@ -12,4 +12,4 @@ export const TX_CONFIG: TransactionBuilderSendAndConfirmOptions = {
     confirm: { commitment: 'confirmed' },
 };
 export const PINATA_FILE_URL = "https://api.pinata.cloud/pinning/pinFileToIPFS";
-export const PINATA_ORIGIN_URL = "https://gateway.pinata.cloud/ipfs/";
+export const PINATA_ORIGIN_URL = "https://gateway.pinata.cloud/ipfs";
