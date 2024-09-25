@@ -5,6 +5,7 @@ dotenv.config();
 
 export const PINATA_APIKEY = process.env.PINATA_APIKEY!;
 export const PAYER_PRIVATEKEY = process.env.PRIVATE_KEY!;
+export const OWNER_PUBKEY = process.env.OWNER_PUBKEY!;
 export const CLUSTERS = process.env.NET == 'dev' ? 'https://devnet.helius-rpc.com/?api-key=ae825a34-1436-4592-9242-51aa686842e5' : 'https://mainnetbeta-rpc.eclipse.xyz';
 export const TX_CONFIG: TransactionBuilderSendAndConfirmOptions = {
     send: { skipPreflight: true },
