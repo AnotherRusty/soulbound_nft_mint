@@ -1,6 +1,6 @@
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
 import { Connection } from "@solana/web3.js";
-import { create, createCollection, fetchCollection, mplCore } from '@metaplex-foundation/mpl-core'
+import { burn, collectionAddress, create, createCollection, fetchAsset, fetchCollection, mplCore, removePlugin, update } from '@metaplex-foundation/mpl-core'
 import { createSignerFromKeypair, generateSigner, signerIdentity, publicKey } from '@metaplex-foundation/umi';
 import bs58 from "bs58";
 import fs from "fs";
@@ -14,8 +14,6 @@ const umi = createUmi(connection).use(mplCore());
 const payer = umi.eddsa.createKeypairFromSecretKey(bs58.decode(PAYER_PRIVATEKEY));
 const payerSigner = createSignerFromKeypair(umi, payer);
 umi.use(signerIdentity(payerSigner));
-const collectionAddy = generateSigner(umi);
-const assetAddy = generateSigner(umi);
 
 export const uploadToIPFS = async (filePath: string) => {
     try {
@@ -50,28 +48,30 @@ export const uploadMetadata = async (metadata: METADATA) => {
 
 export const createNFTCollection = async () => {
     try {
+        const collectionAddy = generateSigner(umi);
         console.log("Collection Address: ", collectionAddy.publicKey.toString());
         await createCollection(umi, {
             collection: collectionAddy,
-            name: 'SoulboundNFTCollection',
+            name: 'Soulbound Mythx',
             uri: '',
         }).sendAndConfirm(umi, TX_CONFIG);
+        return collectionAddy;
     } catch (error) {
         console.log("Collection Create Error: ", error);
     }
-
 }
 
-export const createNFT = async (uri: string) => {
+export const createNFT = async (uri: string, collectionAddy: string) => {
     try {
+        const assetAddy = generateSigner(umi);
         console.log("Asset Address: ", assetAddy.publicKey.toString());
-        const collection = await fetchCollection(umi, collectionAddy.publicKey)
+        const collection = await fetchCollection(umi, publicKey(collectionAddy))
         await create(umi, {
             asset: assetAddy,
             collection: collection,
             payer: payerSigner,
             owner: publicKey(OWNER_PUBKEY),
-            name: 'SMBNFT',
+            name: "Mythx #015",
             uri: uri,
             plugins: [
                 {
@@ -85,5 +85,54 @@ export const createNFT = async (uri: string) => {
         }).sendAndConfirm(umi, TX_CONFIG);
     } catch (error) {
         console.log("Create NFT Error: ", error);
+    }
+}
+
+export const updateNFT = async (assetAddy: string, collectionAddy: string) => {
+    try {
+        const assetId = publicKey(assetAddy);
+        const collectionId = publicKey(collectionAddy);
+        const asset = await fetchAsset(umi, assetId);
+        const collection = await fetchCollection(umi, collectionId)
+        await update(umi, {
+            asset: asset,
+            collection: collection,
+            name: 'Mythx #003',
+            uri: 'https://gateway.pinata.cloud/ipfs/QmPj5KCEx7fet5XwzCH6crbWb54feVzuioTkivVuaxTBwv',
+        }).sendAndConfirm(umi)
+
+    } catch (error) {
+        console.log("update error: ", error)
+    }
+}
+
+export const burnNFT = async (assetAddy: string) => {
+    try {
+        const asset = await fetchAsset(umi, publicKey(assetAddy));
+        const collectionAddy = collectionAddress(asset);
+        if (collectionAddy) {
+            const collection = await fetchCollection(umi, collectionAddy);
+            const result = await burn(umi, {
+                asset: asset,
+                collection: collection,
+            }).sendAndConfirm(umi, TX_CONFIG)
+            console.log("Resutls: ", result)
+        }
+    } catch (error) {
+        console.log("Burn Error: ", error)
+    }
+}
+
+export const removeAssetPlugin = async (assetAddy: string) => {
+    try {
+        const asset = await fetchAsset(umi, publicKey(assetAddy));
+        const collectionAddy = collectionAddress(asset);
+        await removePlugin(umi, {
+            asset: publicKey(assetAddy),
+            collection: collectionAddy,
+            plugin: { type: 'PermanentFreezeDelegate' },
+        }).sendAndConfirm(umi)
+    } catch (error) {
+        console.log("Remove plugin Error: ", error);
     }
 }
